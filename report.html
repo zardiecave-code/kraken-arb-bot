@@ -267,12 +267,13 @@
     <p class="eyebrow">Kraken &amp; Coinbase · triangular and cross-exchange · measurement report</p>
     <h1>The edge is always somewhere you can&rsquo;t reach it.</h1>
     <p class="lede">
-      Five live scans across two exchanges, each reaching further than the last — every tradable
-      symbol on Kraken, then Kraken against Coinbase. The search kept finding larger edge the
-      further it went from liquid markets. Every time, the mechanism that would let you take it
-      turned out to be missing — and the largest number of all was not an opportunity at all.
+      Five measurement runs across two exchanges, each reaching further than the last — every
+      tradable symbol on Kraken, then Kraken against Coinbase — plus a sixth that repeated the
+      cross-venue scan at a different hour. The search kept finding larger edge the further it went
+      from liquid markets. Every time, the mechanism that would let you take it turned out to be
+      missing, and the largest number of all was not an opportunity at all.
     </p>
-    <p class="fine">9 August 2026 · 12,806 scans · 130 minutes · 2 exchanges · $50 notional · depth-walked books, no API keys</p>
+    <p class="fine">9 August 2026 · 14,591 scans · 145 minutes · 2 exchanges · $50 notional · depth-walked books, no API keys</p>
   </header>
 
   <!-- ========================================================= VERDICT -->
@@ -285,8 +286,8 @@
       </div>
       <div class="vcell">
         <span class="k">Best edge, across venues</span>
-        <span class="v v-edge num">+22.55</span>
-        <span class="s">basis points &#8212; assets that can actually move between them</span>
+        <span class="v v-edge num">+84.94</span>
+        <span class="s">basis points &#8212; and still 0.9bps under what two legs cost</span>
       </div>
       <div class="vcell">
         <span class="k">Biggest number the scanner saw</span>
@@ -296,7 +297,7 @@
       <div class="vcell">
         <span class="k">Scans where edge beat costs</span>
         <span class="v num">0</span>
-        <span class="s">of 12,806, on either strategy</span>
+        <span class="s">of 14,591, on either strategy, at the fees you would pay</span>
       </div>
     </div>
   </section>
@@ -931,6 +932,31 @@
           there. This is the cost the spread was compensating for all along.
         </p>
       </div>
+
+      <hr class="rule">
+
+      <h3>Postscript — the same scan two hours later</h3>
+      <p class="fine">
+        Run E was repeated from the packaged executable at 23:41 rather than 21:11, same venues,
+        same $10,000 volume floor, 1,785 scans over 58 assets. It did not reproduce Run E. It found
+        considerably more: the best transferable edge reached <strong>+84.94bps on COTI</strong>,
+        close to four times Run E's +22.55bps, and the share of scans whose best transferable loop
+        cleared +20bps went from <span class="num">0.3%</span> to <span class="num">43.3%</span>.
+      </p>
+      <p class="fine">
+        Two things follow, and only one of them is comfortable. The cross-venue spread is strongly
+        time-varying, so Run E was not a worst case and this is not an upper bound either — a
+        fifteen-minute window is a small sample of a moving quantity. And <strong>+84.94bps lands
+        0.9 basis points under the 85.84bps that two taker legs cost at base tiers</strong>: the
+        same near-miss the Kraken runs produced against their own fee floor, arrived at by an
+        entirely different route, on a different pair, on a different exchange.
+      </p>
+      <p class="fine">
+        The BONK artifact reproduced exactly, at <span class="num">+1,229.84bps</span>, still
+        correctly quarantined by the transferability filter. Two assets (LINK, LTC) were dropped
+        when Coinbase refused their subscriptions, and the run reports that rather than quietly
+        measuring 58 while claiming 60.
+      </p>
     </div>
   </section>
 
@@ -965,6 +991,7 @@
           <li><strong>Coinbase's fee schedule is assumed, not verified.</strong> Kraken's tier-0 rates came from its own API during run A. The Coinbase columns in the two-leg table are published-schedule figures entered by hand — no account was used. Treat that table as a range to locate yourself in, not a quote.</li>
           <li><strong>Run E's costs are understated by design.</strong> Withdrawal fees, on-chain fees, and the price risk of an in-flight transfer are not modeled at all. For cross-venue trading these are not a correction to the answer — they are the dominant term.</li>
           <li><strong>Run E lost one asset.</strong> Coinbase caps level2 subscriptions per connection; the feed shards across four, and one subscription was still refused, dropping LTC. 59 of 60 were measured, and the scanner now reports any such gap rather than quietly measuring a subset.</li>
+          <li><strong>Cross-venue spreads move with the clock.</strong> Runs E and F were the same scan two hours apart and differed by roughly 4× in peak transferable edge. A fifteen-minute window is a small sample of a quantity that varies; neither run bounds the other.</li>
           <li><strong>Transferability is a point-in-time check.</strong> Deposit and withdrawal status can change hourly, and an asset enabled on both venues can still have a slow or expensive network. The filter catches hard blocks, not friction.</li>
           <li><strong>Two venues, not the market.</strong> This says nothing about other exchanges, perpetuals, or DEX routes, each of which carries its own version of the same accounting.</li>
         </ul>
@@ -992,13 +1019,17 @@
             <tr><td>&nbsp;&nbsp;unfiltered best</td><td colspan="4" class="fail">+1104.84bps (BONK — cannot be deposited to Kraken)</td></tr>
             <tr><td>&nbsp;&nbsp;transferable best</td><td colspan="4" class="pass">+22.55bps (BICO)</td></tr>
             <tr><td>&nbsp;&nbsp;typical band</td><td colspan="4">+5 to +20bps on 55.9% of scans</td></tr>
+            <tr><td colspan="5" style="padding-top:1rem;color:var(--ink-muted)">Run F — same scan repeated 2h later from the exe, 900s, 1,785 scans, 58 assets</td></tr>
+            <tr><td>&nbsp;&nbsp;unfiltered best</td><td colspan="4" class="fail">+1229.84bps (BONK again — still not transferable)</td></tr>
+            <tr><td>&nbsp;&nbsp;transferable best</td><td colspan="4" class="pass">+84.94bps (COTI) — 0.9bps under the 2-leg base-tier cost</td></tr>
+            <tr><td>&nbsp;&nbsp;cleared +20bps</td><td colspan="4">43.3% of scans, against 0.3% in run E</td></tr>
           </tbody>
         </table>
       </div>
     </details>
 
     <p class="fine" style="margin-top:0.5rem">
-      The bot itself works correctly — 130 minutes, 12,806 passes, two exchanges, up to 1,317 live
+      The bot itself works correctly — 145 minutes, 14,591 passes, two exchanges, up to 1,317 live
       order books at once, pricing honestly throughout. Each run found more edge than the last, and
       each time the reason it could not be taken turned out to be different: fees that exceed it,
       markets too small to hold the trade, a deposit channel that is simply closed. The most
