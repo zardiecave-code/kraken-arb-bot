@@ -64,16 +64,48 @@ trading as tuition.
 
 ---
 
-## Quickstart
+## One-click executable
+
+Build a single self-contained `.exe` — Python and every dependency inside, so it
+runs on a machine with no Python installed:
+
+```bash
+build-exe.cmd
+```
+
+That produces `dist\kraken-arb-bot.exe` (~12 MB). Double-click it and you get a
+menu:
+
+```
+  1)  Scan Kraken triangles          read-only, no API keys needed
+  2)  Scan Kraken vs Coinbase        read-only, no API keys needed
+  3)  Run the bot                    mode comes from .env
+  4)  Show current configuration
+```
+
+It is a menu rather than a single action on purpose: options 1 and 2 are
+read-only reconnaissance, option 3 can place real orders. A binary that started
+trading on a double-click would be the wrong thing to build. Option 3 additionally
+requires you to type `LIVE` before any real order goes out, on top of the three
+`.env` flags.
+
+The exe reads `.env` and writes `logs\` and `state.json` **next to itself**, so
+keep it in its own folder. With no `.env` at all it still runs both scanners.
+
+## From source
 
 ```bash
 cd kraken-arb-bot && python -m venv .venv && .venv\Scripts\pip install -r requirements.txt
 ```
 
-Look before you touch keys — this needs no credentials and places nothing:
+Look before you touch keys — neither scanner needs credentials or places anything:
 
 ```bash
 .venv\Scripts\python scan.py 300
+```
+
+```bash
+.venv\Scripts\python scan_cross.py 900
 ```
 
 Then copy `.env.example` to `.env` and configure. To run the bot:
