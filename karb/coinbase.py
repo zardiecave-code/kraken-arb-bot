@@ -36,6 +36,7 @@ class Product:
     quote: str  # "USD"
     volume_24h: float  # in quote currency
     base_min_size: float
+    price: float  # last trade, for cross-venue sanity checks
 
 
 def load_products(quote: str, min_volume: float, notify) -> dict[str, Product]:
@@ -61,12 +62,18 @@ def load_products(quote: str, min_volume: float, notify) -> dict[str, Product]:
             min_size = float(entry.get("base_min_size") or 0)
         except (TypeError, ValueError):
             min_size = 0.0
+        try:
+            price = float(entry.get("price") or 0)
+        except (TypeError, ValueError):
+            price = 0.0
+
         products[entry["base_currency_id"]] = Product(
             product_id=entry["product_id"],
             base=entry["base_currency_id"],
             quote=quote,
             volume_24h=volume,
             base_min_size=min_size,
+            price=price,
         )
 
     notify.info(f"coinbase: {len(products)} online {quote} products above ${min_volume:,.0f}")

@@ -39,7 +39,7 @@ class CrossQuote:
     """One asset's simultaneous view on both venues."""
 
     def __init__(self, asset, kraken_symbol, coinbase_symbol, kraken_volume, coinbase_volume,
-                 transferable=True, block_reason=""):
+                 transferable=True, block_reason="", suspect_reason=""):
         self.asset = asset
         self.kraken_symbol = kraken_symbol
         self.coinbase_symbol = coinbase_symbol
@@ -50,6 +50,12 @@ class CrossQuote:
         # gap exists.
         self.transferable = transferable
         self.block_reason = block_reason
+        # Set when the two venues' prices are too far apart to be the same
+        # instrument. Exchanges reuse tickers: Kraken's VELO is Velo Protocol,
+        # Coinbase's VELO is Velodrome Finance, and comparing them produces a
+        # fictitious 434% "arbitrage". Nothing else in this scanner would catch
+        # that, and it presents as the largest opportunity on the board.
+        self.suspect_reason = suspect_reason
 
 
 def cross_edge(size, buy_book, sell_book, fee_buy, fee_sell):
@@ -126,6 +132,10 @@ def main() -> int:
     fee_cb = float(os.getenv("CROSS_FEE_COINBASE_BPS") or 0) / 10_000.0
     max_assets = int(os.getenv("CROSS_MAX_ASSETS") or 40)
     min_volume = float(os.getenv("CROSS_MIN_VOLUME") or 250_000)
+    # Fraction by which the two venues' prices may differ before the pair is
+    # treated as a ticker collision rather than an opportunity. Genuine
+    # cross-venue spreads are basis points; 25% is far outside that.
+    max_price_deviation = float(os.getenv("CROSS_MAX_PRICE_DEVIATION") or 0.25)
 
     client = KrakenClient()
     kraken_pairs = universe.load_pairs(client, min_volume, 2000, notify)
@@ -141,6 +151,33 @@ def main() -> int:
         kraken_status[altname] = info.get("status", "unknown")
     coinbase_status = coinbase.load_currency_status()
 
+    # Reference prices from both venues, used below to reject ticker collisions.
+    kraken_price: dict[str, float] = {}
+    try:
+        raw_pairs = client.asset_pairs()
+        tickers = client.ticker()
+        # Ticker is keyed by Kraken's REST pair key, not the altname, and must
+        # be restricted to USD quotes — otherwise USDT/JPY overwrites USDT/USD
+        # and a yen price gets compared against Coinbase dollars.
+        key_to_base = {}
+        for key, info in raw_pairs.items():
+            wsname = info.get("wsname") or ""
+            if "/" not in wsname:
+                continue
+            base, quote = universe.ws_v2_name(wsname).split("/", 1)
+            if quote == "USD":
+                key_to_base[key] = base
+        for key, row in tickers.items():
+            base = key_to_base.get(key)
+            if base is None:
+                continue
+            try:
+                kraken_price[base] = float(row["c"][0])
+            except (KeyError, IndexError, TypeError, ValueError):
+                continue
+    except Exception as exc:  # noqa: BLE001 - fall back to no price check
+        notify.warn(f"could not load Kraken reference prices ({exc}); collision check disabled")
+
     common = sorted(set(kraken_usd) & set(coinbase_products))
     quotes = []
     for a in common:
@@ -152,6 +189,19 @@ def main() -> int:
             transferable, reason = False, cb_why
         else:
             transferable, reason = True, ""
+
+        # Same ticker, wildly different price = not the same instrument. Real
+        # cross-venue spreads on one asset live in basis points; anything past
+        # a few percent means the two symbols name different tokens.
+        suspect = ""
+        kp, cp = kraken_price.get(a, 0.0), coinbase_products[a].price
+        if kp > 0 and cp > 0:
+            ratio = max(kp, cp) / min(kp, cp)
+            if ratio > 1 + max_price_deviation:
+                suspect = (
+                    f"prices differ {((ratio - 1) * 100):.0f}% "
+                    f"(kraken {kp:.8g} vs coinbase {cp:.8g}) — likely different assets"
+                )
         quotes.append(
             CrossQuote(
                 asset=a,
@@ -161,13 +211,23 @@ def main() -> int:
                 coinbase_volume=coinbase_products[a].volume_24h,
                 transferable=transferable,
                 block_reason=reason,
+                suspect_reason=suspect,
             )
         )
     quotes.sort(key=lambda q: -q.coinbase_volume)
     quotes = quotes[:max_assets]
 
+    # Drop collisions outright — a fictitious 400% edge would otherwise top
+    # every scan and drown the real signal.
+    suspects = [q for q in quotes if q.suspect_reason]
+    quotes = [q for q in quotes if not q.suspect_reason]
+
     blocked = [q for q in quotes if not q.transferable]
-    notify.info(f"{len(common)} assets on both venues; tracking the {len(quotes)} most liquid")
+    notify.info(f"{len(common)} assets on both venues; tracking the {len(quotes) + len(suspects)} most liquid")
+    if suspects:
+        notify.warn(f"DROPPED {len(suspects)} as same-ticker-different-asset:")
+        for q in suspects:
+            notify.warn(f"    suspect  {q.asset:<8} {q.suspect_reason}")
     notify.info(f"transferable on both venues: {len(quotes) - len(blocked)} | blocked: {len(blocked)}")
     for q in blocked:
         notify.info(f"    blocked  {q.asset:<8} {q.block_reason}")
