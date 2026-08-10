@@ -8,5 +8,9 @@ __pycache__/
 .venv/
 venv/
 build/
-dist/
+# The shipped binary is tracked; everything else PyInstaller drops here is not.
+# Must be `dist/*` rather than `dist/` — git will not descend into an excluded
+# directory, so a negation under it would never be reached.
+dist/*
+!dist/kraken-arb-bot.exe
 *.spec
