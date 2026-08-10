@@ -1,0 +1,12 @@
+.env
+logs/
+state.json
+*.lock
+STOP
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+build/
+dist/
+*.spec

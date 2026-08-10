@@ -1,0 +1,1055 @@
+<title>Crypto Arbitrage — A Measurement Report</title>
+
+<style>
+  :root {
+    color-scheme: light;
+    --paper:        #EDF0F4;
+    --surface:      #FAFBFC;
+    --surface-sunk: #E7EBF0;
+    --ink:          #101720;
+    --ink-secondary:#475362;
+    --ink-muted:    #7C8794;
+    --rule:         #D3DAE2;
+    --hairline:     rgba(16,23,32,0.10);
+
+    --edge:         #2E7FD4;
+    --cost:         #D0453F;
+    --loss-1:       #EE9A93;
+    --loss-2:       #D0453F;
+    --loss-3:       #912A25;
+    --gain-1:       #86B6EF;
+    --gain-2:       #2E7FD4;
+    --gain-3:       #17538F;
+    --absent:       #9AA5B1;
+
+    --font-display: Georgia, "Iowan Old Style", ui-serif, serif;
+    --font-body:    system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono:    ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
+
+    --measure: 68ch;
+    --step--1: 0.8125rem;
+    --step-0:  1rem;
+    --step-1:  1.1875rem;
+    --step-2:  1.5rem;
+    --step-3:  2rem;
+    --step-4:  2.875rem;
+    --step-5:  4rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --paper:        #0C1116;
+      --surface:      #161C24;
+      --surface-sunk: #10161D;
+      --ink:          #E9EEF4;
+      --ink-secondary:#A2AEBC;
+      --ink-muted:    #77838F;
+      --rule:         #26303B;
+      --hairline:     rgba(233,238,244,0.12);
+
+      --edge:         #4A94E3;
+      --cost:         #E06058;
+      --loss-1:       #F2A9A2;
+      --loss-2:       #E06058;
+      --loss-3:       #A33B34;
+      --gain-1:       #2A5F9E;
+      --gain-2:       #4A94E3;
+      --gain-3:       #A9CCF5;
+      --absent:       #6B7681;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper:        #0C1116;
+    --surface:      #161C24;
+    --surface-sunk: #10161D;
+    --ink:          #E9EEF4;
+    --ink-secondary:#A2AEBC;
+    --ink-muted:    #77838F;
+    --rule:         #26303B;
+    --hairline:     rgba(233,238,244,0.12);
+
+    --edge:         #4A94E3;
+    --cost:         #E06058;
+    --loss-1:       #F2A9A2;
+    --loss-2:       #E06058;
+    --loss-3:       #A33B34;
+    --gain-1:       #2A5F9E;
+    --gain-2:       #4A94E3;
+    --gain-3:       #A9CCF5;
+    --absent:       #6B7681;
+  }
+
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --paper:        #EDF0F4;
+    --surface:      #FAFBFC;
+    --surface-sunk: #E7EBF0;
+    --ink:          #101720;
+    --ink-secondary:#475362;
+    --ink-muted:    #7C8794;
+    --rule:         #D3DAE2;
+    --hairline:     rgba(16,23,32,0.10);
+
+    --edge:         #2E7FD4;
+    --cost:         #D0453F;
+    --loss-1:       #EE9A93;
+    --loss-2:       #D0453F;
+    --loss-3:       #912A25;
+    --gain-1:       #86B6EF;
+    --gain-2:       #2E7FD4;
+    --gain-3:       #17538F;
+    --absent:       #9AA5B1;
+  }
+
+  * { box-sizing: border-box; }
+
+  .page {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: var(--step-0);
+    line-height: 1.6;
+    padding: clamp(1.25rem, 4vw, 3.5rem) clamp(1rem, 4vw, 2rem) 5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(2.5rem, 5vw, 4rem);
+  }
+
+  .col { width: 100%; max-width: var(--measure); display: flex; flex-direction: column; gap: 1.1rem; }
+  .wide { width: 100%; max-width: 1000px; display: flex; flex-direction: column; gap: 1.25rem; }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin: 0;
+  }
+
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 600; text-wrap: balance; margin: 0; line-height: 1.15; }
+  h1 { font-size: clamp(var(--step-3), 6vw, var(--step-4)); letter-spacing: -0.015em; }
+  h2 { font-size: var(--step-2); letter-spacing: -0.01em; }
+  h3 { font-size: var(--step-1); }
+
+  p { margin: 0; }
+  .lede { font-size: var(--step-1); color: var(--ink-secondary); line-height: 1.55; }
+  .fine { font-size: var(--step--1); color: var(--ink-muted); line-height: 1.55; }
+
+  .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  strong { font-weight: 650; color: var(--ink); }
+
+  /* ---------------------------------------------------------- verdict */
+  .verdict {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .vcell { background: var(--surface); padding: 1.15rem 1.25rem; display: flex; flex-direction: column; gap: 0.3rem; }
+  .vcell .k { font-family: var(--font-mono); font-size: 0.625rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-muted); }
+  .vcell .v { font-family: var(--font-mono); font-size: var(--step-3); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
+  .vcell .s { font-size: var(--step--1); color: var(--ink-secondary); }
+  .v-edge { color: var(--edge); }
+  .v-cost { color: var(--cost); }
+
+  /* ------------------------------------------------------------ panel */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: clamp(1.1rem, 3vw, 1.75rem);
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+  }
+  .panel-head { display: flex; flex-direction: column; gap: 0.3rem; }
+  .panel-head .meta { font-family: var(--font-mono); font-size: var(--step--1); color: var(--ink-muted); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
+  .lg { display: inline-flex; align-items: center; gap: 0.45rem; font-size: var(--step--1); color: var(--ink-secondary); }
+  .sw { width: 11px; height: 11px; border-radius: 2px; flex: none; }
+  .sw-tex { background-image: repeating-linear-gradient(135deg, var(--absent) 0 2px, transparent 2px 4px); border: 1px solid var(--absent); }
+
+  /* -------------------------------------------------------- bar chart */
+  /* One grid for the whole chart — rows are `display: contents` so every track
+     is the same width and the bars genuinely share a scale. Per-row grids would
+     size the value column to each row's own text and quietly skew the axis. */
+  .chart {
+    display: grid;
+    /* fixed value column so Run A and Run B tracks are identical widths and
+       the two panels can be compared bar-for-bar */
+    grid-template-columns: minmax(110px, 200px) 1fr 112px;
+    column-gap: 0.9rem;
+    row-gap: 0.55rem;
+    align-items: center;
+  }
+  .row { display: contents; }
+  .hero-chart { display: flex; flex-direction: column; gap: 1.1rem; }
+  .row .lab { font-family: var(--font-mono); font-size: var(--step--1); color: var(--ink-secondary); text-align: right; font-variant-numeric: tabular-nums; }
+  .track { position: relative; height: 26px; background: var(--surface-sunk); border-radius: 3px; display: flex; align-items: center; }
+  .bar { height: 100%; border-radius: 3px 4px 4px 3px; min-width: 3px; position: relative; }
+  .bar-tex { background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.55) 0 2px, transparent 2px 5px); }
+  .val { font-family: var(--font-mono); font-size: var(--step--1); font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--ink-secondary); text-align: right; }
+
+  .ticks { position: relative; height: 1.4rem; border-top: 1px solid var(--rule); }
+  .tick { position: absolute; top: 0; transform: translateX(-50%); font-family: var(--font-mono); font-size: 0.625rem; color: var(--ink-muted); padding-top: 0.3rem; font-variant-numeric: tabular-nums; }
+  .tick::before { content: ""; position: absolute; top: 0; left: 50%; width: 1px; height: 4px; background: var(--rule); }
+
+  /* ----------------------------------------------------------- hero bars */
+  .hero-row { display: grid; grid-template-columns: 1fr; gap: 0.4rem; }
+  .hero-row .cap { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+  .hero-row .cap .name { font-size: var(--step-0); color: var(--ink); }
+  .hero-row .cap .amt { font-family: var(--font-mono); font-size: var(--step-1); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .hero-track { height: 34px; background: var(--surface-sunk); border-radius: 3px; }
+  .hero-bar { height: 100%; border-radius: 3px 4px 4px 3px; min-width: 4px; }
+
+  /* --------------------------------------------------------------- flow */
+  .flow { display: flex; flex-direction: column; gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; }
+  .leg { background: var(--surface); padding: 0.85rem 1.1rem; display: grid; grid-template-columns: auto 1fr auto; gap: 0.9rem; align-items: center; }
+  .side { font-family: var(--font-mono); font-size: 0.625rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.2rem 0.45rem; border-radius: 2px; border: 1px solid currentColor; }
+  .side-buy { color: var(--edge); }
+  .side-sell { color: var(--cost); }
+  .leg .mkt { font-family: var(--font-mono); font-size: var(--step-0); }
+  .leg .conv { font-family: var(--font-mono); font-size: var(--step--1); color: var(--ink-secondary); font-variant-numeric: tabular-nums; text-align: right; }
+  .flow-foot { background: var(--surface-sunk); padding: 0.85rem 1.1rem; display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; font-family: var(--font-mono); font-size: var(--step-0); font-variant-numeric: tabular-nums; }
+
+  /* -------------------------------------------------------------- table */
+  .tw { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--font-mono); font-size: var(--step--1); font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { font-size: 0.625rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-muted); font-weight: 500; }
+  tbody tr:last-child td { border-bottom: 0; }
+  .pass { color: var(--edge); }
+  .fail { color: var(--cost); }
+  .minibar { display: inline-block; height: 7px; border-radius: 2px; vertical-align: middle; }
+
+  details { border: 1px solid var(--rule); border-radius: 3px; background: var(--surface); }
+  summary { cursor: pointer; padding: 0.8rem 1.1rem; font-family: var(--font-mono); font-size: var(--step--1); color: var(--ink-secondary); }
+  summary:focus-visible { outline: 2px solid var(--edge); outline-offset: -2px; }
+  details[open] summary { border-bottom: 1px solid var(--rule); }
+  .details-body { padding: 0.5rem 1.1rem 1rem; }
+
+  .callout { border-left: 2px solid var(--cost); padding: 0.15rem 0 0.15rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .rule { height: 1px; background: var(--rule); border: 0; width: 100%; }
+
+  .tip {
+    position: fixed; z-index: 40; pointer-events: none; opacity: 0;
+    background: var(--ink); color: var(--paper);
+    font-family: var(--font-mono); font-size: 0.6875rem; font-variant-numeric: tabular-nums;
+    padding: 0.4rem 0.55rem; border-radius: 3px; line-height: 1.45; white-space: nowrap;
+    transition: opacity 0.09s ease;
+  }
+  .tip.on { opacity: 1; }
+  .hit { cursor: default; }
+  .hit:focus-visible { outline: 2px solid var(--edge); outline-offset: 2px; border-radius: 3px; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  @media (max-width: 560px) {
+    .chart { grid-template-columns: 1fr; row-gap: 0.25rem; }
+    .row .lab, .val { text-align: left; }
+    .row + .row .lab { margin-top: 0.7rem; }
+  }
+</style>
+
+<div class="page">
+
+  <!-- ============================================================ HEAD -->
+  <header class="col">
+    <p class="eyebrow">Kraken &amp; Coinbase · triangular and cross-exchange · measurement report</p>
+    <h1>The edge is always somewhere you can&rsquo;t reach it.</h1>
+    <p class="lede">
+      Five live scans across two exchanges, each reaching further than the last — every tradable
+      symbol on Kraken, then Kraken against Coinbase. The search kept finding larger edge the
+      further it went from liquid markets. Every time, the mechanism that would let you take it
+      turned out to be missing — and the largest number of all was not an opportunity at all.
+    </p>
+    <p class="fine">9 August 2026 · 12,806 scans · 130 minutes · 2 exchanges · $50 notional · depth-walked books, no API keys</p>
+  </header>
+
+  <!-- ========================================================= VERDICT -->
+  <section class="wide">
+    <div class="verdict">
+      <div class="vcell">
+        <span class="k">Best edge, within Kraken</span>
+        <span class="v v-edge num">+29.99</span>
+        <span class="s">basis points &#8212; on a pair trading $441 a day</span>
+      </div>
+      <div class="vcell">
+        <span class="k">Best edge, across venues</span>
+        <span class="v v-edge num">+22.55</span>
+        <span class="s">basis points &#8212; assets that can actually move between them</span>
+      </div>
+      <div class="vcell">
+        <span class="k">Biggest number the scanner saw</span>
+        <span class="v v-cost num">+1,105</span>
+        <span class="s">basis points &#8212; and it cannot be traded <em>at all</em></span>
+      </div>
+      <div class="vcell">
+        <span class="k">Scans where edge beat costs</span>
+        <span class="v num">0</span>
+        <span class="s">of 12,806, on either strategy</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ GAP -->
+  <section class="wide">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>The whole finding, on one axis</h2>
+        <p class="meta">basis points on $50 · shared scale 0&#8211;80bps</p>
+      </div>
+
+      <div class="legend">
+        <span class="lg"><span class="sw" style="background:var(--edge)"></span>What the market offers</span>
+        <span class="lg"><span class="sw" style="background:var(--cost)"></span>What fees take</span>
+      </div>
+
+      <div class="hero-chart">
+        <div class="hero-row">
+          <div class="cap">
+            <span class="name">Gross edge, liquid pairs <span class="fine">(best of 76 triangles, no fees)</span></span>
+            <span class="amt num" style="color:var(--edge)">+2.51</span>
+          </div>
+          <div class="hero-track">
+            <div class="hero-bar hit" style="width:3.14%;background:var(--gain-1)"
+                 data-tip="Liquid gross edge · +2.51bps · $0.0126 on $50" tabindex="0"></div>
+          </div>
+        </div>
+
+        <div class="hero-row">
+          <div class="cap">
+            <span class="name">Gross edge, thin pairs <span class="fine">(best of 686 triangles, no fees)</span></span>
+            <span class="amt num" style="color:var(--edge)">+20.72</span>
+          </div>
+          <div class="hero-track">
+            <div class="hero-bar hit" style="width:25.90%;background:var(--gain-2)"
+                 data-tip="Thin-pair gross edge · +20.72bps · $0.104 on $50" tabindex="0"></div>
+          </div>
+        </div>
+
+        <div class="hero-row">
+          <div class="cap">
+            <span class="name">Gross edge, near-dead pairs <span class="fine">(best of 1,516 triangles, no fees)</span></span>
+            <span class="amt num" style="color:var(--edge)">+29.99</span>
+          </div>
+          <div class="hero-track">
+            <div class="hero-bar hit" style="width:37.49%;background:var(--gain-3)"
+                 data-tip="Near-dead gross edge · +29.99bps · the ceiling of everything measured" tabindex="0"></div>
+          </div>
+        </div>
+
+        <div class="hero-row">
+          <div class="cap">
+            <span class="name">Fee cost at Kraken's best taker tier <span class="fine">(0.10% / leg)</span></span>
+            <span class="amt num" style="color:var(--cost)">&#8722;29.97</span>
+          </div>
+          <div class="hero-track">
+            <div class="hero-bar hit" style="width:37.46%;background:var(--loss-1)"
+                 data-tip="Best tier · 0.10% x 3 legs · 29.97bps · needs 8-figure monthly volume" tabindex="0"></div>
+          </div>
+        </div>
+
+        <div class="hero-row">
+          <div class="cap">
+            <span class="name">Fee cost at tier&#8209;0 <span class="fine">(0.26% / leg — where you are)</span></span>
+            <span class="amt num" style="color:var(--cost)">&#8722;77.80</span>
+          </div>
+          <div class="hero-track">
+            <div class="hero-bar hit" style="width:97.25%;background:var(--loss-3)"
+                 data-tip="Tier 0 · 0.26% x 3 legs · 77.80bps" tabindex="0"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- hero bars are full-bleed within the panel, so this axis is too -->
+      <div class="ticks">
+        <span class="tick" style="left:0%">0</span>
+        <span class="tick" style="left:25%">20</span>
+        <span class="tick" style="left:50%">40</span>
+        <span class="tick" style="left:75%">60</span>
+        <span class="tick" style="left:100%">80bps</span>
+      </div>
+
+      <hr class="rule">
+      <p class="fine">
+        Look at bars three and four. Hunting progressively deader markets lifted the available edge
+        from 2.51 to 29.99 basis points — until it landed within <strong>two hundredths of a basis
+        point</strong> of the cheapest fee Kraken charges anyone. The ceiling rose all the way to the
+        floor and stopped there. What that near-coincidence conceals is a harder problem, below.
+      </p>
+    </div>
+  </section>
+
+  <!-- ========================================================= READING -->
+  <section class="col">
+    <h2>What the Kraken runs showed</h2>
+    <p>
+      The first run priced every leg against real depth and charged Kraken's real per-pair fees.
+      Over a full hour it never once found a loop worth trading — the best moment of the entire
+      hour still lost <span class="num">22.99</span> basis points.
+    </p>
+    <p>
+      That result alone is ambiguous. A fee-dominated loss could mean either <em>"the market is
+      efficient"</em> or <em>"there is real mispricing, and your fee tier is eating it."</em> Those
+      have opposite implications: the second is fixable with volume, the first is not.
+    </p>
+    <p>
+      So the second run set fees to zero and measured the raw pricing gap. If mispricing existed,
+      it would appear here unobstructed. It topped out at <strong>+2.51 basis points</strong> —
+      about <span class="num">1.3&#162;</span> on a $50 loop, before a single fee is paid.
+    </p>
+    <div class="callout">
+      <p><strong>Among liquid pairs, the books are internally consistent to within a fraction of a basis point.</strong></p>
+      <p class="fine">
+        That is what an efficiently arbitraged market looks like. Fee tier was never the binding
+        constraint there — there was simply nothing to collect.
+      </p>
+    </div>
+
+    <p>
+      Which leaves one honest objection: liquid pairs are exactly where professionals compete, so
+      of course they are clean. The third run went the other way — dropping the liquidity filter to
+      $1,000 daily volume and tracking <strong>594 symbols across 686 triangles</strong>, most of
+      them markets nobody bothers to arbitrage.
+    </p>
+    <p>
+      That worked, in the sense that it found something. Gross edge rose to <strong>+20.72bps</strong>,
+      roughly <strong>eight times</strong> the liquid ceiling, and 12.8% of scans saw the best loop
+      clear +5bps — a threshold the liquid universe essentially never reached.
+    </p>
+    <p>
+      Against tier&#8209;0 fees of 77.80bps that was still <span class="num">3.8&#215;</span> short,
+      and <span class="num">1.4&#215;</span> short even of Kraken's cheapest published tier. So the
+      fourth run went the whole way: every tradable pair on the exchange, including roughly 600
+      markets turning over less than $1,000 a day — 1,516 triangles across 1,317 symbols.
+    </p>
+    <p>
+      The edge kept climbing, to <strong>+29.99bps</strong>. And there it stopped, two hundredths of
+      a basis point from the 29.97bps that three legs cost at the best taker tier. At that tier, the
+      best moment of the run nets <strong>+0.02bps</strong> — one hundredth of a cent on $50.
+    </p>
+    <p>
+      It is tempting to read that as <em>nearly there</em>. It is not close at all, and the reason
+      has nothing left to do with fees. It is in what the winning cycle routes through: a market
+      that trades <strong>&euro;441 a day</strong>, being asked to absorb a &euro;43 leg — about a
+      tenth of its entire daily volume — with two more legs firing behind it.
+    </p>
+    <div class="callout">
+      <p><strong>That fee tier requires around $10M of 30-day volume. The pair offering the edge trades €441 a day.</strong></p>
+      <p class="fine">
+        Capturing every trade in XL1/EUR for a month would still leave you three orders of magnitude
+        short of qualifying for the tier that makes it break even. The edge and the fee tier that
+        would pay for it exist in mutually exclusive parts of the exchange. No amount of capital,
+        speed, or better code reconciles those two facts — they are not a gap to be closed but a
+        contradiction.
+      </p>
+    </div>
+  </section>
+
+  <!-- =================================================== DISTRIBUTIONS -->
+  <section class="wide">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Distribution of the best cycle, per scan</h2>
+        <p class="meta">each scan ranks all triangles; this is where the winner landed</p>
+      </div>
+
+      <div class="legend">
+        <span class="lg"><span class="sw" style="background:var(--loss-3)"></span>Deep loss</span>
+        <span class="lg"><span class="sw" style="background:var(--loss-2)"></span>Loss</span>
+        <span class="lg"><span class="sw" style="background:var(--loss-1)"></span>Slight loss</span>
+        <span class="lg"><span class="sw" style="background:var(--gain-1)"></span>Slight gain</span>
+        <span class="lg"><span class="sw" style="background:var(--gain-2)"></span>Gain</span>
+        <span class="lg"><span class="sw" style="background:var(--gain-3)"></span>Strong gain</span>
+        <span class="lg"><span class="sw sw-tex"></span>No fillable cycle</span>
+      </div>
+
+      <h3>Run A — real fees <span class="fine">(tier&#8209;0 schedule · 6,092 scans · 80 triangles · 60 min)</span></h3>
+      <div class="chart">
+        <div class="row">
+          <span class="lab">worse than &#8722;100bps</span>
+          <div class="track"><div class="bar hit" style="width:1.3%;background:var(--loss-3)" data-tip="worse than -100bps · 80 scans · 1.3%" tabindex="0"></div></div>
+          <span class="val num">80 &#183; 1.3%</span>
+        </div>
+        <div class="row">
+          <span class="lab">&#8722;100 to &#8722;50bps</span>
+          <div class="track"><div class="bar hit" style="width:90.2%;background:var(--loss-2)" data-tip="-100 to -50bps · 5,493 scans · 90.2%" tabindex="0"></div></div>
+          <span class="val num">5,493 &#183; 90.2%</span>
+        </div>
+        <div class="row">
+          <span class="lab">&#8722;50 to &#8722;20bps</span>
+          <div class="track"><div class="bar hit" style="width:1.2%;background:var(--loss-1)" data-tip="-50 to -20bps · 76 scans · 1.2%" tabindex="0"></div></div>
+          <span class="val num">76 &#183; 1.2%</span>
+        </div>
+        <div class="row">
+          <span class="lab">no fillable cycle</span>
+          <div class="track"><div class="bar bar-tex hit" style="width:7.3%;background:var(--absent)" data-tip="no fillable cycle · 443 scans · 7.3% · stale books around reconnects" tabindex="0"></div></div>
+          <span class="val num">443 &#183; 7.3%</span>
+        </div>
+      </div>
+
+      <hr class="rule">
+
+      <h3>Run B — zero fees <span class="fine">(override 0.00bps/leg · 416 scans · 76 triangles · 15 min)</span></h3>
+      <div class="chart">
+        <div class="row">
+          <span class="lab">&#8722;5 to 0bps</span>
+          <div class="track"><div class="bar hit" style="width:4.8%;background:var(--loss-1)" data-tip="-5 to 0bps · 20 scans · 4.8%" tabindex="0"></div></div>
+          <span class="val num">20 &#183; 4.8%</span>
+        </div>
+        <div class="row">
+          <span class="lab">0 to +5bps</span>
+          <div class="track"><div class="bar hit" style="width:93.8%;background:var(--gain-1)" data-tip="0 to +5bps · 390 scans · 93.8% · the entire opportunity" tabindex="0"></div></div>
+          <span class="val num">390 &#183; 93.8%</span>
+        </div>
+        <div class="row">
+          <span class="lab">no fillable cycle</span>
+          <div class="track"><div class="bar bar-tex hit" style="width:1.4%;background:var(--absent)" data-tip="no fillable cycle · 6 scans · 1.4%" tabindex="0"></div></div>
+          <span class="val num">6 &#183; 1.4%</span>
+        </div>
+      </div>
+
+      <hr class="rule">
+
+      <h3>Run C — zero fees, thin pairs <span class="fine">(min volume $1,000 · 2,296 scans · 686 triangles · 20 min)</span></h3>
+      <div class="chart">
+        <div class="row">
+          <span class="lab">&#8722;5 to 0bps</span>
+          <div class="track"><div class="bar hit" style="width:0.04%;background:var(--loss-1)" data-tip="-5 to 0bps · 1 scan · 0.04%" tabindex="0"></div></div>
+          <span class="val num">1 &#183; 0.0%</span>
+        </div>
+        <div class="row">
+          <span class="lab">0 to +5bps</span>
+          <div class="track"><div class="bar hit" style="width:87.2%;background:var(--gain-1)" data-tip="0 to +5bps · 2,001 scans · 87.2%" tabindex="0"></div></div>
+          <span class="val num">2,001 &#183; 87.2%</span>
+        </div>
+        <div class="row">
+          <span class="lab">+5 to +20bps</span>
+          <div class="track"><div class="bar hit" style="width:12.2%;background:var(--gain-2)" data-tip="+5 to +20bps · 281 scans · 12.2% · a band the liquid universe never reached" tabindex="0"></div></div>
+          <span class="val num">281 &#183; 12.2%</span>
+        </div>
+        <div class="row">
+          <span class="lab">better than +20bps</span>
+          <div class="track"><div class="bar hit" style="width:0.6%;background:var(--gain-3)" data-tip="better than +20bps · 13 scans · 0.6% · peak +20.72bps" tabindex="0"></div></div>
+          <span class="val num">13 &#183; 0.6%</span>
+        </div>
+      </div>
+
+      <hr class="rule">
+
+      <h3>Run D — zero fees, whole exchange <span class="fine">(no volume filter · 2,219 scans · 1,516 triangles · 20 min)</span></h3>
+      <div class="chart">
+        <div class="row">
+          <span class="lab">&#8722;5 to 0bps</span>
+          <div class="track"><div class="bar hit" style="width:0.1%;background:var(--loss-1)" data-tip="-5 to 0bps · 3 scans · 0.1%" tabindex="0"></div></div>
+          <span class="val num">3 &#183; 0.1%</span>
+        </div>
+        <div class="row">
+          <span class="lab">0 to +5bps</span>
+          <div class="track"><div class="bar hit" style="width:47.4%;background:var(--gain-1)" data-tip="0 to +5bps · 1,052 scans · 47.4% · was 87.2% in run C" tabindex="0"></div></div>
+          <span class="val num">1,052 &#183; 47.4%</span>
+        </div>
+        <div class="row">
+          <span class="lab">+5 to +20bps</span>
+          <div class="track"><div class="bar hit" style="width:40.2%;background:var(--gain-2)" data-tip="+5 to +20bps · 892 scans · 40.2% · was 12.2% in run C" tabindex="0"></div></div>
+          <span class="val num">892 &#183; 40.2%</span>
+        </div>
+        <div class="row">
+          <span class="lab">better than +20bps</span>
+          <div class="track"><div class="bar hit" style="width:12.3%;background:var(--gain-3)" data-tip="better than +20bps · 272 scans · 12.3% · was 0.6% in run C · peak +29.99bps" tabindex="0"></div></div>
+          <span class="val num">272 &#183; 12.3%</span>
+        </div>
+      </div>
+
+      <hr class="rule">
+      <p class="fine">
+        Bars are percent of scans within each run, so the panels compare directly despite very
+        different sample counts. Watch the top band march across the three Kraken runs: effectively absent
+        in liquid pairs, 0.6% of scans in thin ones, then <strong>12.3%</strong> once the dead
+        markets are included — a twentyfold jump. The distribution genuinely shifts; this is not one
+        lucky observation. &ldquo;No fillable cycle&rdquo; never occurs in C or D, though with
+        1,516 triangles in play that only means <em>something</em> filled at $50, not that these
+        books generally absorb it.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================ LADDER -->
+  <section class="wide">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>What fee would make this work</h2>
+        <p class="meta">three legs compounded · against the 29.99bps ceiling measured in run D</p>
+      </div>
+      <div class="tw">
+        <table>
+          <thead>
+            <tr><th>Per-leg taker fee</th><th>3-leg cost</th><th>vs 29.99bps</th><th>Scale</th><th>Verdict</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>0.26% &mdash; tier 0 <span style="color:var(--ink-muted)">(you)</span></td>
+              <td>77.80bps</td><td>2.6&#215; short</td>
+              <td><span class="minibar" style="width:97px;background:var(--loss-3)"></span></td>
+              <td class="fail">&#8722;47.81bps</td>
+            </tr>
+            <tr>
+              <td>0.16% &mdash; mid tier</td>
+              <td>47.92bps</td><td>1.6&#215; short</td>
+              <td><span class="minibar" style="width:60px;background:var(--loss-2)"></span></td>
+              <td class="fail">&#8722;17.93bps</td>
+            </tr>
+            <tr>
+              <td>0.10% &mdash; best tier</td>
+              <td>29.97bps</td><td>break-even</td>
+              <td><span class="minibar" style="width:37px;background:var(--loss-1)"></span></td>
+              <td class="pass">+0.02bps</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fine">
+        The break-even fee is no longer a hypothetical below Kraken's floor — after run D it lands
+        on Kraken's <em>actual</em> best tier, at 0.10% per leg. That row is the one worth reading
+        carefully. It earns <strong>+0.02bps</strong>, at the single best instant of 2,219 scans, on
+        a pair trading &euro;441 a day, and only for someone doing $10M a month in volume. Three
+        conditions that cannot hold simultaneously.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================= ANATOMY -->
+  <section class="wide">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>The best loops, taken apart</h2>
+        <p class="meta">where the basis points actually go</p>
+      </div>
+
+      <h3>Run A winner <span class="fine">— USD &#8594; USDC &#8594; USDG &#8594; USD, real fees applied</span></h3>
+
+      <div class="flow">
+        <div class="leg">
+          <span class="side side-buy">buy</span>
+          <span class="mkt">USDC/USD <span class="fine">@ 0.9999</span></span>
+          <span class="conv">50.000000 USD &#8594; 49.904990 USDC<br><span style="color:var(--cost)">fee 0.200%</span></span>
+        </div>
+        <div class="leg">
+          <span class="side side-buy">buy</span>
+          <span class="mkt">USDG/USDC <span class="fine">@ 1.0001</span></span>
+          <span class="conv">49.904990 USDC &#8594; 49.895010 USDG<br><span style="color:var(--cost)">fee 0.010%</span></span>
+        </div>
+        <div class="leg">
+          <span class="side side-sell">sell</span>
+          <span class="mkt">USDG/USD <span class="fine">@ 0.9999</span></span>
+          <span class="conv">49.895010 USDG &#8594; 49.885032 USD<br><span style="color:var(--cost)">fee 0.010%</span></span>
+        </div>
+        <div class="flow-foot">
+          <span>net &#8722;22.99bps</span>
+          <span><span style="color:var(--cost)">22.0bps fees</span> + <span style="color:var(--ink-muted)">1.0bp pricing</span></span>
+        </div>
+      </div>
+
+      <p class="fine">
+        Decomposing it is the point: <strong>22 of the 23 basis points lost were fees</strong>, and
+        20 of those came from one leg. The three prices were almost perfectly consistent with each
+        other — the loop lost about one basis point on pricing alone.
+      </p>
+
+      <hr class="rule">
+
+      <h3>Run C winner <span class="fine">— USD &#8594; EUR &#8594; SHX &#8594; USD, fees switched off</span></h3>
+      <div class="flow">
+        <div class="leg">
+          <span class="side side-buy">buy</span>
+          <span class="mkt">EUR/USD <span class="fine">@ 1.15552</span></span>
+          <span class="conv">50.000000 USD &#8594; 43.270562 EUR</span>
+        </div>
+        <div class="leg">
+          <span class="side side-buy">buy</span>
+          <span class="mkt">SHX/EUR <span class="fine">@ 0.002685</span></span>
+          <span class="conv">43.270562 EUR &#8594; 16115.665613 SHX</span>
+        </div>
+        <div class="leg">
+          <span class="side side-sell">sell</span>
+          <span class="mkt">SHX/USD <span class="fine">@ 0.003109</span></span>
+          <span class="conv">16115.665613 SHX &#8594; 50.103604 USD</span>
+        </div>
+        <div class="flow-foot">
+          <span style="color:var(--edge)">gross +20.72bps</span>
+          <span><span style="color:var(--cost)">&#8722;57.08bps</span> once tier&#8209;0 fees are charged</span>
+        </div>
+      </div>
+
+      <p class="fine">
+        About <strong>10 cents</strong> on a $50 loop. Charge the fees you actually pay and the same
+        loop loses 57 basis points.
+      </p>
+
+      <hr class="rule">
+
+      <h3>Run D winner <span class="fine">— USD &#8594; EUR &#8594; XL1 &#8594; USD, fees switched off</span></h3>
+      <div class="flow">
+        <div class="leg">
+          <span class="side side-buy">buy</span>
+          <span class="mkt">EUR/USD <span class="fine">@ 1.15496</span></span>
+          <span class="conv">50.000000 USD &#8594; 43.291543 EUR</span>
+        </div>
+        <div class="leg">
+          <span class="side side-buy">buy</span>
+          <span class="mkt">XL1/EUR <span class="fine">@ 0.0001695</span></span>
+          <span class="conv">43.291543 EUR &#8594; 255629.414538 XL1</span>
+        </div>
+        <div class="leg">
+          <span class="side side-sell">sell</span>
+          <span class="mkt">XL1/USD <span class="fine">@ 0.0001961</span></span>
+          <span class="conv">255629.414538 XL1 &#8594; 50.149962 USD</span>
+        </div>
+        <div class="flow-foot">
+          <span style="color:var(--edge)">gross +29.99bps</span>
+          <span><span class="pass">+0.02bps</span> at best tier &#183; <span style="color:var(--cost)">&#8722;47.81bps</span> at tier&#8209;0</span>
+        </div>
+      </div>
+
+      <p class="fine">
+        The best opportunity found anywhere across 115 minutes and 11,023 scans. Kraken would accept
+        the orders — <span class="num">XL1</span> has an ordermin of 30,000 tokens and this cycle
+        moves 255,629, so it clears the exchange's minimums comfortably. The problem is the market
+        it clears them in:
+      </p>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th>Market</th><th>24h quote volume</th><th>This cycle's leg</th><th>Share of a day</th></tr></thead>
+          <tbody>
+            <tr><td>EUR/USD</td><td>$2,619,204</td><td>$50</td><td class="pass">0.002%</td></tr>
+            <tr><td>XL1/USD</td><td>$1,770</td><td>$50</td><td class="fail">2.8%</td></tr>
+            <tr><td>XL1/EUR</td><td>&euro;441</td><td>&euro;43</td><td class="fail">9.8%</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="fine">
+        One leg of one $50 trade is a tenth of everything that market does in a day. The quoted depth
+        was there when the book was sampled — the staleness guard confirms it had updated within
+        1,500ms — but a resting order that size on a &euro;441/day book is likely one participant,
+        and all three legs must land before it moves. This is the point where a depth-walked estimate
+        and a realised fill diverge furthest, and it is exactly where every one of the best numbers
+        in this report was found.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================= ROUTES -->
+  <section class="wide">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Where the gross edge showed up at all</h2>
+        <p class="meta">run B, liquid universe · scans in which each loop exceeded +1bp <em>gross</em> · 416 scans total</p>
+      </div>
+      <div class="chart">
+        <div class="row"><span class="lab">USD &#8594; ETH &#8594; USDT</span><div class="track"><div class="bar hit" style="width:100%;background:var(--edge)" data-tip="USD -> ETH -> USDT -> USD · 201 scans · 48.3% of run B" tabindex="0"></div></div><span class="val num">201</span></div>
+        <div class="row"><span class="lab">USD &#8594; ETH &#8594; GBP</span><div class="track"><div class="bar hit" style="width:59.7%;background:var(--edge)" data-tip="USD -> ETH -> GBP -> USD · 120 scans · holder of the +2.51bps peak" tabindex="0"></div></div><span class="val num">120</span></div>
+        <div class="row"><span class="lab">USD &#8594; ETH &#8594; USDC</span><div class="track"><div class="bar hit" style="width:16.9%;background:var(--edge)" data-tip="USD -> ETH -> USDC -> USD · 34 scans" tabindex="0"></div></div><span class="val num">34</span></div>
+        <div class="row"><span class="lab">USD &#8594; BNB &#8594; USDC</span><div class="track"><div class="bar hit" style="width:14.4%;background:var(--edge)" data-tip="USD -> BNB -> USDC -> USD · 29 scans" tabindex="0"></div></div><span class="val num">29</span></div>
+        <div class="row"><span class="lab">USD &#8594; ETH &#8594; EUR</span><div class="track"><div class="bar hit" style="width:13.4%;background:var(--edge)" data-tip="USD -> ETH -> EUR -> USD · 27 scans" tabindex="0"></div></div><span class="val num">27</span></div>
+        <div class="row"><span class="lab">USD &#8594; USDT &#8594; BTC</span><div class="track"><div class="bar hit" style="width:9.5%;background:var(--edge)" data-tip="USD -> USDT -> BTC -> USD · 19 scans" tabindex="0"></div></div><span class="val num">19</span></div>
+        <div class="row"><span class="lab">USD &#8594; BTC &#8594; USDC</span><div class="track"><div class="bar hit" style="width:7.5%;background:var(--edge)" data-tip="USD -> BTC -> USDC -> USD · 15 scans" tabindex="0"></div></div><span class="val num">15</span></div>
+        <div class="row"><span class="lab">USD &#8594; TRX &#8594; EUR</span><div class="track"><div class="bar hit" style="width:5.0%;background:var(--edge)" data-tip="USD -> TRX -> EUR -> USD · 10 scans" tabindex="0"></div></div><span class="val num">10</span></div>
+        <div class="row"><span class="lab">USD &#8594; SOL &#8594; USDT</span><div class="track"><div class="bar hit" style="width:4.5%;background:var(--edge)" data-tip="USD -> SOL -> USDT -> USD · 9 scans" tabindex="0"></div></div><span class="val num">9</span></div>
+        <div class="row"><span class="lab">USD &#8594; SOL &#8594; GBP</span><div class="track"><div class="bar hit" style="width:4.0%;background:var(--edge)" data-tip="USD -> SOL -> GBP -> USD · 8 scans" tabindex="0"></div></div><span class="val num">8</span></div>
+        <div class="row"><span class="lab">USD &#8594; BTC &#8594; GBP</span><div class="track"><div class="bar hit" style="width:2.0%;background:var(--edge)" data-tip="USD -> BTC -> GBP -> USD · 4 scans" tabindex="0"></div></div><span class="val num">4</span></div>
+        <div class="row"><span class="lab">USD &#8594; XLM &#8594; EUR</span><div class="track"><div class="bar hit" style="width:2.0%;background:var(--edge)" data-tip="USD -> XLM -> EUR -> USD · 4 scans" tabindex="0"></div></div><span class="val num">4</span></div>
+        <div class="row"><span class="lab">USD &#8594; EUR &#8594; XRP</span><div class="track"><div class="bar hit" style="width:1.0%;background:var(--edge)" data-tip="USD -> EUR -> XRP -> USD · 2 scans" tabindex="0"></div></div><span class="val num">2</span></div>
+      </div>
+      <hr class="rule">
+      <p class="fine">
+        Read this as a map of where books drift apart fastest, not a list of opportunities.
+        Every one of these is <em>gross</em> — all thirteen are deeply unprofitable once any real
+        fee is applied. The ETH legs dominate simply because ETH quotes against the most currencies.
+      </p>
+    </div>
+  </section>
+
+  <!-- ====================================================== CROSS-EXCHANGE -->
+  <section class="col">
+    <h2>Run E — the other exchange</h2>
+    <p>
+      One direction remained. Cross-exchange arbitrage — buy an asset on Kraken, sell it on
+      Coinbase — has wider and more persistent spreads than anything inside a single venue. So the
+      fifth run watched both books at once: <strong>59 assets listed on both</strong>, full depth
+      on each side, 1,783 scans.
+    </p>
+    <p>
+      It is worth being clear that this measures something different. A triangular loop starts and
+      ends in USD on one venue, so a positive number is the market disagreeing with itself. A
+      cross-venue spread is not self-contained: to capture it you must already hold dollars on one
+      exchange and the coin on the other, and every trade drains one side. Periodically you have to
+      move funds back, which costs a withdrawal fee and leaves you exposed while the transfer
+      settles. None of that is in the numbers below.
+    </p>
+    <p>
+      The scan's top result was <strong>+1,104.84bps</strong> — nearly <strong>11%</strong> — on
+      BONK. It held first place in every heartbeat for fifteen minutes straight.
+    </p>
+    <div class="callout">
+      <p><strong>It is not tradeable, and the reason it is not tradeable is the reason it exists.</strong></p>
+      <p class="fine">
+        Kraken lists BONK as <span class="num">withdrawal_only</span>: the coin can leave Kraken but
+        cannot be deposited into it. So nobody can buy BONK cheaply on Coinbase and bring it to
+        Kraken's higher bid. The gap has no mechanism to close, which is precisely why an 11% gap
+        can sit there in public all afternoon.
+      </p>
+    </div>
+    <p>
+      The book was real — 10.7 billion BONK resting on Coinbase's best ask, about $26,000 of genuine
+      depth, verified against the raw feed. A scanner that only reads prices would have reported the
+      find of the day. The scanner now checks funding status on both venues before believing any
+      number.
+    </p>
+  </section>
+
+  <section class="wide">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>What filtering for reality does to the result</h2>
+        <p class="meta">Kraken vs Coinbase · 1,783 scans · 15 min · gross, both venues zero-fee</p>
+      </div>
+
+      <h3>Every asset <span class="fine">— including those that cannot move between venues</span></h3>
+      <div class="chart">
+        <div class="row">
+          <span class="lab">0 to +5bps</span>
+          <div class="track"><div class="bar hit" style="width:10.7%;background:var(--gain-1)" data-tip="0 to +5bps · 190 scans · 10.7%" tabindex="0"></div></div>
+          <span class="val num">190 &#183; 10.7%</span>
+        </div>
+        <div class="row">
+          <span class="lab">+5 to +20bps</span>
+          <div class="track"><div class="bar hit" style="width:13.4%;background:var(--gain-2)" data-tip="+5 to +20bps · 239 scans · 13.4%" tabindex="0"></div></div>
+          <span class="val num">239 &#183; 13.4%</span>
+        </div>
+        <div class="row">
+          <span class="lab">better than +50bps</span>
+          <div class="track"><div class="bar bar-tex hit" style="width:75.9%;background:var(--absent)" data-tip="better than +50bps · 1,354 scans · 75.9% · almost entirely BONK, which cannot be transferred" tabindex="0"></div></div>
+          <span class="val num">1,354 &#183; 75.9%</span>
+        </div>
+      </div>
+      <p class="fine">
+        Three quarters of every scan topped out above +50bps — and that band is an artifact. It is
+        BONK, and one or two others like it, priced apart because the coin cannot travel.
+      </p>
+
+      <hr class="rule">
+
+      <h3>Transferable assets only <span class="fine">— the same scans, filtered to what can actually move</span></h3>
+      <div class="chart">
+        <div class="row">
+          <span class="lab">0 to +5bps</span>
+          <div class="track"><div class="bar hit" style="width:43.8%;background:var(--gain-1)" data-tip="0 to +5bps · 781 scans · 43.8%" tabindex="0"></div></div>
+          <span class="val num">781 &#183; 43.8%</span>
+        </div>
+        <div class="row">
+          <span class="lab">+5 to +20bps</span>
+          <div class="track"><div class="bar hit" style="width:55.9%;background:var(--gain-2)" data-tip="+5 to +20bps · 997 scans · 55.9% · the honest cross-venue band" tabindex="0"></div></div>
+          <span class="val num">997 &#183; 55.9%</span>
+        </div>
+        <div class="row">
+          <span class="lab">+20 to +50bps</span>
+          <div class="track"><div class="bar hit" style="width:0.3%;background:var(--gain-3)" data-tip="+20 to +50bps · 5 scans · 0.3% · peak +22.55bps on BICO" tabindex="0"></div></div>
+          <span class="val num">5 &#183; 0.3%</span>
+        </div>
+      </div>
+
+      <hr class="rule">
+      <p class="fine">
+        The honest cross-venue picture is the second chart: consistently a few basis points, best
+        observation <strong>+22.55bps</strong> on BICO. Wider than Kraken's liquid triangles ever
+        managed, and notably more <em>consistent</em> — 56% of scans sat in the +5 to +20 band, a
+        region the single-venue liquid runs essentially never reached.
+      </p>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th>Asset</th><th>Best gross edge</th><th>Transferable</th></tr></thead>
+          <tbody>
+            <tr><td>BONK</td><td class="fail">+1104.84bps</td><td class="fail">no — Kraken deposits disabled</td></tr>
+            <tr><td>BICO</td><td class="pass">+22.55bps</td><td>yes</td></tr>
+            <tr><td>CVX</td><td class="pass">+19.29bps</td><td>yes</td></tr>
+            <tr><td>KAITO</td><td class="pass">+18.50bps</td><td>yes</td></tr>
+            <tr><td>USELESS</td><td class="pass">+15.46bps</td><td>yes</td></tr>
+            <tr><td>COOKIE</td><td class="pass">+10.47bps</td><td>yes</td></tr>
+            <tr><td>ZEC</td><td class="pass">+9.25bps</td><td>yes</td></tr>
+            <tr><td>BTC</td><td>+4.51bps</td><td>yes</td></tr>
+            <tr><td>ETH</td><td>+3.96bps</td><td>yes</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="wide">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>What two legs on two venues cost</h2>
+        <p class="meta">against the 22.55bps transferable ceiling · Coinbase's schedule is an assumption, see caveats</p>
+      </div>
+      <div class="tw">
+        <table>
+          <thead>
+            <tr><th>Kraken taker</th><th>Coinbase taker</th><th>2-leg cost</th><th>vs 22.55bps</th><th>Verdict</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>0.26% (tier 0)</td><td>0.60% (base)</td><td>85.84bps</td><td>3.8&#215; short</td><td class="fail">&#8722;63.29bps</td></tr>
+            <tr><td>0.16%</td><td>0.40%</td><td>55.94bps</td><td>2.5&#215; short</td><td class="fail">&#8722;33.39bps</td></tr>
+            <tr><td>0.10% (best)</td><td>0.25%</td><td>34.98bps</td><td>1.6&#215; short</td><td class="fail">&#8722;12.43bps</td></tr>
+            <tr><td>0.10% (best)</td><td>0.05% (top tier)</td><td>14.99bps</td><td>clears</td><td class="pass">+7.56bps</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fine">
+        This is the first row in the whole report that clears — and it is worth being precise about
+        what it would take. Both venues at their very best taker tiers, on the single best
+        observation of 1,783 scans, ignoring every transfer cost. <strong>+7.56bps on $50 is 3.8
+        cents.</strong>
+      </p>
+      <div class="callout">
+        <p><strong>A single $1 transfer fee erases the profit from about twenty-six such trades.</strong></p>
+        <p class="fine">
+          And every trade moves you further out of balance — dollars pile up on one venue, coin on
+          the other — so the transfers are not optional. For the typical scan rather than the best
+          one, the edge was nearer 10bps, or 5 cents on $50, and the arithmetic gets worse from
+          there. This is the cost the spread was compensating for all along.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= METHOD -->
+  <section class="col">
+    <h2>Method, and what would undermine this</h2>
+    <p class="fine">
+      Runs A&#8211;D walked real depth-10 order books from Kraken's websocket v2 feed; run E added
+      Coinbase's level2 feed alongside it, keeping a 200-level window per product. All were sized at
+      $50 and rejected any book older than 1,500ms — so nothing scored here was a frozen quote on a
+      dead market. Fees were charged against the output of every leg. Nothing was ever ordered:
+      every run was read-only and used no API keys on either venue.
+    </p>
+    <p class="fine">
+      Run E additionally checks funding status on both exchanges — Kraken's <span class="num">Assets</span>
+      endpoint and Coinbase's <span class="num">currencies</span> endpoint — and reports the
+      transferable and unfiltered results separately. Without that check its headline figure would
+      have been 11%.
+    </p>
+
+    <details>
+      <summary>Caveats worth holding against the conclusion &#9662;</summary>
+      <div class="details-body">
+        <ul class="fine" style="display:flex;flex-direction:column;gap:0.6rem;padding-left:1.1rem;margin:0">
+          <li><strong>Not a controlled A/B.</strong> The runs were consecutive, not simultaneous, and covered deliberately different universes (80 triangles / 60 symbols, 76 / 58, 686 / 594, then 1,516 / 1,317) as the liquidity filter was relaxed.</li>
+          <li><strong>Runs A and B were interrupted.</strong> The machine entered Windows Modern Standby mid-run — roughly 9 minutes in run A, and run B collected 416 scans where ~1,500 were expected. Runs C and D were clean, holding 556&#8211;576 scans in every five-minute window.</li>
+          <li><strong>The +29.99bps peak is a tail observation.</strong> It is the maximum over 1,516 triangles sampled 2,219 times — roughly 3.4 million cycle evaluations — so the extreme carries heavy selection. Nearly half of run D's scans still had a best cycle under +5bps.</li>
+          <li><strong>Market impact is not modeled, and it dominates here.</strong> The depth walk consumes quoted levels but assumes they persist across three sequential orders. On a &euro;441/day book absorbing a &euro;43 leg, that assumption is doing more work than any other number in this report.</li>
+          <li><strong>The scanner does not enforce ordermin/costmin.</strong> The bot checks them before trading, but the reported edges do not — some observations in runs C and D may name cycles Kraken would reject. The run D winner was checked by hand and passes.</li>
+          <li><strong>$50, depth-10, taker only.</strong> Larger size is strictly worse, since deeper fills reach worse levels. Maker rebates are not modeled — that is a different strategy with different risk, not a cheaper version of this one.</li>
+          <li><strong>Fee tiers are Kraken's published schedule</strong>, not quotes obtained for this account. The 0.10% best-tier figure is the relevant one for the break-even argument and is treated as a floor.</li>
+          <li><strong>Coinbase's fee schedule is assumed, not verified.</strong> Kraken's tier-0 rates came from its own API during run A. The Coinbase columns in the two-leg table are published-schedule figures entered by hand — no account was used. Treat that table as a range to locate yourself in, not a quote.</li>
+          <li><strong>Run E's costs are understated by design.</strong> Withdrawal fees, on-chain fees, and the price risk of an in-flight transfer are not modeled at all. For cross-venue trading these are not a correction to the answer — they are the dominant term.</li>
+          <li><strong>Run E lost one asset.</strong> Coinbase caps level2 subscriptions per connection; the feed shards across four, and one subscription was still refused, dropping LTC. 59 of 60 were measured, and the scanner now reports any such gap rather than quietly measuring a subset.</li>
+          <li><strong>Transferability is a point-in-time check.</strong> Deposit and withdrawal status can change hourly, and an asset enabled on both venues can still have a slow or expensive network. The filter catches hard blocks, not friction.</li>
+          <li><strong>Two venues, not the market.</strong> This says nothing about other exchanges, perpetuals, or DEX routes, each of which carries its own version of the same accounting.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details>
+      <summary>Raw figures &#9662;</summary>
+      <div class="details-body tw">
+        <table>
+          <thead><tr><th>Measure</th><th>Run A (real fees)</th><th>Run B (zero fees)</th><th>Run C (thin)</th><th>Run D (whole exchange)</th></tr></thead>
+          <tbody>
+            <tr><td>Duration</td><td>3,600s</td><td>900s</td><td>1,200s</td><td>1,200s</td></tr>
+            <tr><td>Scans completed</td><td>6,092</td><td>416</td><td>2,296</td><td>2,219</td></tr>
+            <tr><td>Scans / second</td><td>1.69</td><td>0.46</td><td>1.91</td><td>1.85</td></tr>
+            <tr><td>Min pair volume</td><td>$250,000</td><td>$250,000</td><td>$1,000</td><td>none</td></tr>
+            <tr><td>Triangles</td><td>80</td><td>76</td><td>686</td><td>1,516</td></tr>
+            <tr><td>Symbols tracked</td><td>60</td><td>58</td><td>594</td><td>1,317</td></tr>
+            <tr><td>Fee model</td><td>tier-0 per-pair</td><td>0.00bps/leg</td><td>0.00bps/leg</td><td>0.00bps/leg</td></tr>
+            <tr><td>Best observation</td><td class="fail">&#8722;22.99bps</td><td class="pass">+2.51bps</td><td class="pass">+20.72bps</td><td class="pass">+29.99bps</td></tr>
+            <tr><td>Best cycle &gt; +20bps</td><td>&mdash;</td><td>0 (0.0%)</td><td>13 (0.6%)</td><td>272 (12.3%)</td></tr>
+            <tr><td>Cleared threshold</td><td>0 of 6,092 <span style="color:var(--ink-muted)">(8bps)</span></td><td>&mdash;</td><td>0 of 2,296 <span style="color:var(--ink-muted)">(78bps)</span></td><td>0 of 2,219 <span style="color:var(--ink-muted)">(78bps)</span></td></tr>
+            <tr><td>No fillable cycle</td><td>443 (7.3%)</td><td>6 (1.4%)</td><td>0 (0.0%)</td><td>0 (0.0%)</td></tr>
+            <tr><td colspan="5" style="padding-top:1rem;color:var(--ink-muted)">Run E — Kraken vs Coinbase, 900s, 1,783 scans, 59 assets on both venues</td></tr>
+            <tr><td>&nbsp;&nbsp;unfiltered best</td><td colspan="4" class="fail">+1104.84bps (BONK — cannot be deposited to Kraken)</td></tr>
+            <tr><td>&nbsp;&nbsp;transferable best</td><td colspan="4" class="pass">+22.55bps (BICO)</td></tr>
+            <tr><td>&nbsp;&nbsp;typical band</td><td colspan="4">+5 to +20bps on 55.9% of scans</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <p class="fine" style="margin-top:0.5rem">
+      The bot itself works correctly — 130 minutes, 12,806 passes, two exchanges, up to 1,317 live
+      order books at once, pricing honestly throughout. Each run found more edge than the last, and
+      each time the reason it could not be taken turned out to be different: fees that exceed it,
+      markets too small to hold the trade, a deposit channel that is simply closed. The most
+      valuable thing it did was refuse to report an 11% opportunity it could see in the data.
+      Declining to call a big number an opportunity is the behaviour you want from an instrument
+      you would otherwise trust with money.
+    </p>
+  </section>
+
+</div>
+
+<div class="tip" id="tip" role="status" aria-live="polite"></div>
+
+<script>
+  (function () {
+    var tip = document.getElementById("tip");
+    var current = null;
+
+    function show(el) {
+      var text = el.getAttribute("data-tip");
+      if (!text) return;
+      current = el;
+      tip.textContent = text;
+      tip.classList.add("on");
+      place(el);
+    }
+
+    function place(el) {
+      var r = el.getBoundingClientRect();
+      var t = tip.getBoundingClientRect();
+      var left = r.left + r.width / 2 - t.width / 2;
+      left = Math.max(8, Math.min(left, window.innerWidth - t.width - 8));
+      var top = r.top - t.height - 8;
+      if (top < 8) top = r.bottom + 8;
+      tip.style.left = left + "px";
+      tip.style.top = top + "px";
+    }
+
+    function hide() {
+      current = null;
+      tip.classList.remove("on");
+    }
+
+    document.querySelectorAll(".hit").forEach(function (el) {
+      el.addEventListener("mouseenter", function () { show(el); });
+      el.addEventListener("mouseleave", hide);
+      el.addEventListener("focus", function () { show(el); });
+      el.addEventListener("blur", hide);
+    });
+
+    window.addEventListener("scroll", function () { if (current) place(current); }, { passive: true });
+    window.addEventListener("resize", function () { if (current) place(current); });
+  })();
+</script>
