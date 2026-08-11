@@ -273,7 +273,7 @@
       from liquid markets. Every time, the mechanism that would let you take it turned out to be
       missing, and the largest number of all was not an opportunity at all.
     </p>
-    <p class="fine">9 August 2026 · 14,591 scans · 145 minutes · 2 exchanges · $50 notional · depth-walked books, no API keys</p>
+    <p class="fine">9 August 2026 · 16,376 scans · 160 minutes · 2 exchanges · $50 notional · depth-walked books, no API keys</p>
   </header>
 
   <!-- ========================================================= VERDICT -->
@@ -297,7 +297,7 @@
       <div class="vcell">
         <span class="k">Scans where edge beat costs</span>
         <span class="v num">0</span>
-        <span class="s">of 14,591, on either strategy, at the fees you would pay</span>
+        <span class="s">of 16,376, on either strategy, at the fees you would pay</span>
       </div>
     </div>
   </section>
@@ -818,6 +818,59 @@
       find of the day. The scanner now checks funding status on both venues before believing any
       number.
     </p>
+
+    <div class="callout" style="border-left-color:var(--edge)">
+      <p><strong>Checked again a day later: the gap is still open, and still shut.</strong></p>
+      <p class="fine">
+        At 16:10 the following afternoon, Kraken still listed BONK as
+        <span class="num">withdrawal_only</span> and the spread was still there — buy Coinbase at
+        <span class="num">2.43e-06</span>, sell Kraken at <span class="num">2.537e-06</span>, a
+        <strong>+4.40%</strong> gap sitting unarbitraged for more than twenty-four hours. That is
+        the prediction this section makes, holding up: a price difference nobody can act on does
+        not decay, because nothing exists to close it.
+      </p>
+      <p class="fine">
+        Its <em>size</em> moved a great deal though, down from roughly 11%. Read the headline figure
+        as a snapshot, not a constant — the mechanism persists, the magnitude wanders.
+      </p>
+    </div>
+
+    <h2 style="margin-top:1.5rem">The second way a cross-venue number lies</h2>
+    <p>
+      A later run turned up something larger than BONK and considerably worse:
+      <strong>+43,432 basis points</strong> on VELO. Four hundred and thirty-four percent, holding
+      first place scan after scan.
+    </p>
+    <div class="callout">
+      <p><strong>They are not the same coin. Kraken's VELO is Velo Protocol; Coinbase's VELO is Velodrome Finance.</strong></p>
+      <p class="fine">
+        Two unrelated tokens that happen to share a ticker, trading at
+        <span class="num">$0.0033</span> and <span class="num">$0.0174</span>. The scanner matched
+        them by symbol, compared the prices, and reported the difference as free money.
+      </p>
+    </div>
+    <p>
+      This is the more dangerous of the two failures. A blocked-transfer gap like BONK simply cannot
+      be captured — you try, and nothing happens. A ticker collision is worse: the trade
+      <em>executes</em>. You buy Velo Protocol on Kraken, then instruct Coinbase to sell Velodrome
+      you have never owned, and what you are left holding is not a hedge but two unrelated positions
+      and a loss.
+    </p>
+    <p class="fine">
+      Nothing already in the scanner would have caught it. The transferability filter answers
+      &ldquo;can this coin move between the venues&rdquo;, not &ldquo;do both venues mean the same
+      coin&rdquo;. The fix compares a reference price from each exchange at startup and drops any
+      pair diverging by more than 25% — genuine cross-venue spreads live in basis points, so nothing
+      real is anywhere near that band. Dropped pairs are reported loudly rather than skipped in
+      silence.
+    </p>
+    <p class="fine">
+      Building that check had its own trap worth recording. Kraken's ticker feed is keyed by REST
+      pair name rather than altname, and the first attempt let <span class="num">USDT/JPY</span>
+      overwrite <span class="num">USDT/USD</span> — so a yen price was compared against Coinbase
+      dollars and USDT was flagged as a 15,932% collision. A guard against bad data is itself data
+      handling, and gets the same scrutiny.
+    </p>
   </section>
 
   <section class="wide">
@@ -957,6 +1010,37 @@
         when Coinbase refused their subscriptions, and the run reports that rather than quietly
         measuring 58 while claiming 60.
       </p>
+
+      <h3 style="margin-top:1.25rem">A third sample, the next afternoon</h3>
+      <p class="fine">
+        Run G, 16:17 the following day, 1,785 scans over 58 assets, with the ticker-collision guard
+        active and no asset blocked. Best transferable edge <strong>+79.65bps on COTI</strong> —
+        the same asset that topped run F, and close to the same number.
+      </p>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Run</th><th>Local time</th><th>Best transferable</th><th>Scans clearing +20bps</th></tr></thead>
+          <tbody>
+            <tr><td>E</td><td>9 Aug, 21:11</td><td>+22.55bps (BICO)</td><td>0.3%</td></tr>
+            <tr><td>F</td><td>9 Aug, 23:41</td><td class="pass">+84.94bps (COTI)</td><td>43.3%</td></tr>
+            <tr><td>G</td><td>10 Aug, 16:17</td><td class="pass">+79.65bps (COTI)</td><td>55.6%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fine">
+        Three samples change the reading. Runs F and G agree closely across seventeen hours and a
+        different time of day, which makes <strong>run E look like the low outlier</strong> rather
+        than the baseline — the opposite of what two points suggested. On this evidence the typical
+        peak is nearer 80bps than 22, and more than half of all scans in run G found a loop clearing
+        +20bps, so it is not a rare tail either.
+      </p>
+      <p class="fine">
+        It still does not clear. Two taker legs cost 85.84bps at base tiers, so
+        <span class="num">+79.65</span> falls <span class="num">6.2bps</span> short — the third time
+        in this report that the best available edge has landed just under the relevant fee floor,
+        and the closest yet on a genuinely transferable asset. Three fifteen-minute windows remain a
+        small sample of a moving quantity; this is a sharper estimate, not a settled one.
+      </p>
     </div>
   </section>
 
@@ -991,6 +1075,7 @@
           <li><strong>Coinbase's fee schedule is assumed, not verified.</strong> Kraken's tier-0 rates came from its own API during run A. The Coinbase columns in the two-leg table are published-schedule figures entered by hand — no account was used. Treat that table as a range to locate yourself in, not a quote.</li>
           <li><strong>Run E's costs are understated by design.</strong> Withdrawal fees, on-chain fees, and the price risk of an in-flight transfer are not modeled at all. For cross-venue trading these are not a correction to the answer — they are the dominant term.</li>
           <li><strong>Run E lost one asset.</strong> Coinbase caps level2 subscriptions per connection; the feed shards across four, and one subscription was still refused, dropping LTC. 59 of 60 were measured, and the scanner now reports any such gap rather than quietly measuring a subset.</li>
+          <li><strong>Asset identity is matched by ticker, then price-checked.</strong> Neither exchange exposes a canonical asset ID the other shares, so the scan pairs symbols and rejects any pair whose prices diverge past 25%. That catches gross collisions like VELO; it would not catch two genuinely distinct tokens that happen to trade at similar prices. Treat the asset list as screened, not verified.</li>
           <li><strong>Cross-venue spreads move with the clock.</strong> Runs E and F were the same scan two hours apart and differed by roughly 4× in peak transferable edge. A fifteen-minute window is a small sample of a quantity that varies; neither run bounds the other.</li>
           <li><strong>Transferability is a point-in-time check.</strong> Deposit and withdrawal status can change hourly, and an asset enabled on both venues can still have a slow or expensive network. The filter catches hard blocks, not friction.</li>
           <li><strong>Two venues, not the market.</strong> This says nothing about other exchanges, perpetuals, or DEX routes, each of which carries its own version of the same accounting.</li>
@@ -1023,13 +1108,17 @@
             <tr><td>&nbsp;&nbsp;unfiltered best</td><td colspan="4" class="fail">+1229.84bps (BONK again — still not transferable)</td></tr>
             <tr><td>&nbsp;&nbsp;transferable best</td><td colspan="4" class="pass">+84.94bps (COTI) — 0.9bps under the 2-leg base-tier cost</td></tr>
             <tr><td>&nbsp;&nbsp;cleared +20bps</td><td colspan="4">43.3% of scans, against 0.3% in run E</td></tr>
+            <tr><td colspan="5" style="padding-top:1rem;color:var(--ink-muted)">Run G — next afternoon, collision guard active, 900s, 1,785 scans, 58 assets</td></tr>
+            <tr><td>&nbsp;&nbsp;transferable best</td><td colspan="4" class="pass">+79.65bps (COTI) — 6.2bps under the 2-leg base-tier cost</td></tr>
+            <tr><td>&nbsp;&nbsp;cleared +20bps</td><td colspan="4">55.6% of scans</td></tr>
+            <tr><td>&nbsp;&nbsp;dropped</td><td colspan="4">VELO (ticker collision), NEAR (subscription refused); 0 blocked</td></tr>
           </tbody>
         </table>
       </div>
     </details>
 
     <p class="fine" style="margin-top:0.5rem">
-      The bot itself works correctly — 145 minutes, 14,591 passes, two exchanges, up to 1,317 live
+      The bot itself works correctly — 160 minutes, 16,376 passes, two exchanges, up to 1,317 live
       order books at once, pricing honestly throughout. Each run found more edge than the last, and
       each time the reason it could not be taken turned out to be different: fees that exceed it,
       markets too small to hold the trade, a deposit channel that is simply closed. The most
@@ -1084,3 +1173,4 @@
     window.addEventListener("resize", function () { if (current) place(current); });
   })();
 </script>
+
